@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>F0NDHUB</title>
+<style>
+:root{--bg:#0f1220;--panel:#171b2e;--line:#262c47;--text:#e8ebf7;--mute:#8b93b5;--accent:#4aa3ff;--danger:#ff5d73}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+button,input,textarea{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:5;display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 20px;background:rgba(15,18,32,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header h1{font-size:20px;margin:0}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{background:var(--accent);color:#06101f;border:0;border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:disabled{opacity:.4;cursor:not-allowed;filter:saturate(.6)}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.danger{background:var(--danger);color:#fff}
+.btn:focus-visible,.card:focus-visible{outline:2px solid #fff;outline-offset:2px}
+main{max-width:1400px;margin:0 auto;padding:20px}
+#search{width:100%;max-width:420px;padding:10px 14px;background:var(--panel);border:1px solid var(--line);border-radius:8px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;height:100%;transition:border-color .15s}
+.card:hover{border-color:var(--accent)}
+.cover{aspect-ratio:16/9;width:100%;object-fit:cover;background:#0b0e1a;display:block}
+.card .body{padding:12px 14px;display:flex;flex-direction:column;gap:6px;flex:1}
+.card h3{margin:0;font-size:17px;color:var(--accent);display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+.card p{margin:0;color:var(--mute);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:42px}
+.meta{margin-top:auto;display:flex;justify-content:space-between;color:var(--mute);font-size:13px}
+.empty{color:var(--mute);text-align:center;padding:60px 0}
+dialog{width:min(720px,94vw);max-height:92vh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:0}
+dialog::backdrop{background:rgba(0,0,0,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+dialog[open]{animation:pop .22s ease}
+dialog[open]::backdrop{animation:fade .22s ease}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}}
+@media (prefers-reduced-motion:reduce){dialog[open],dialog[open]::backdrop{animation:none}}
+.dbody{padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.dbody h2{margin:0}
+.desc{white-space:pre-wrap;color:#cfd4ec}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+label{display:flex;flex-direction:column;gap:4px;color:var(--mute);font-size:14px}
+input[type=text],input[type=url],input[type=password],textarea{width:100%;background:#0f1220;border:1px solid var(--line);border-radius:8px;padding:10px 12px;color:var(--text);outline:0;-webkit-appearance:none;appearance:none}
+input[type=text]:focus,input[type=url]:focus,input[type=password]:focus,textarea:focus{border-color:var(--accent)}
+input.in-ok,input.in-ok:focus{border-color:#4ade80;box-shadow:0 0 0 1px #4ade80}
+input.in-bad,input.in-bad:focus{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger)}
+textarea{min-height:110px;resize:vertical}
+.hide{display:none!important}
+.like.on{background:var(--accent);color:#06101f}
+#auth{width:min(420px,94vw)}
+#auth .btn{width:100%;text-align:center}
+.link{background:none;border:0;color:var(--accent);cursor:pointer;padding:0;text-decoration:underline}
+.sep{text-align:center;color:var(--mute);font-size:13px}
+.err{color:var(--danger);margin:0;font-size:14px}
+.status{font-size:13px}
+.status:empty{display:none}
+.status.ok{color:#4ade80}
+.status.bad{color:var(--danger)}
+.meter{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;transition:width .2s,background .2s}
+#toast{position:fixed;inset:auto;top:16px;left:50%;transform:translateX(-50%);margin:0;border:0;background:#000;color:#fff;padding:10px 18px;border-radius:8px;max-width:90vw;text-align:center;overflow:visible}
+.busy{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;background:rgba(15,18,32,.9);border-radius:12px;font-weight:600;text-align:center;padding:20px}
+.spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>F0NDHUB</h1>
+  <div class="bar">
+    <button class="btn hide" id="newBtn">+ Đăng bài</button>
+    <span id="who" class="hide" style="color:var(--mute);font-size:14px"></span>
+    <button class="btn ghost" id="loginBtn">Đăng nhập</button>
+    <button class="btn ghost hide" id="logoutBtn">Đăng xuất</button>
+  </div>
+</header>
+<main>
+  <input id="search" type="search" placeholder="Tìm bài viết...">
+  <div class="grid" id="grid"></div>
+  <div class="empty hide" id="empty">Chưa có bài viết nào.</div>
+</main>
+
+<dialog id="view">
+  <img class="cover" id="vCover" alt="">
+  <div class="dbody">
+    <h2 id="vTitle"></h2>
+    <div class="desc" id="vDesc"></div>
+    <div class="row">
+      <a class="btn" id="vLink" target="_blank" rel="noopener noreferrer"></a>
+      <button class="btn ghost like" id="vLike"></button>
+      <span id="vViews" style="color:var(--mute);font-size:14px"></span>
+    </div>
+    <div class="row hide" id="adminRow">
+      <button class="btn ghost" id="editBtn">Sửa</button>
+      <button class="btn danger" id="delBtn">Xóa</button>
+    </div>
+    <div class="row"><button class="btn ghost" data-close>Đóng</button></div>
+  </div>
+</dialog>
+
+<dialog id="form">
+  <div class="dbody">
+    <h2 id="fHead">Đăng bài mới</h2>
+    <label>Ảnh bìa
+      <input type="file" id="fFile" accept="image/*">
+    </label>
+    <img class="cover hide" id="fPrev" alt="" style="border-radius:8px">
+    <label>Tiêu đề <input type="text" id="fTitle" maxlength="120"></label>
+    <label>Mô tả <textarea id="fDesc" maxlength="5000"></textarea></label>
+    <label>Liên kết <input type="url" id="fLink" placeholder="https://..."></label>
+    <label>Tên nút liên kết <input type="text" id="fBtn" maxlength="40" placeholder="Ví dụ: Tải script"></label>
+    <div class="row">
+      <button class="btn" id="fSave">Lưu bài</button>
+      <button class="btn ghost" data-close>Hủy</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="auth">
+  <div class="dbody">
+    <h2>Welcome !</h2>
+    <div id="loginView" class="dbody" style="padding:0">
+      <label>Tên đăng nhập <input type="text" id="lUser" autocomplete="username" autocapitalize="none"></label>
+      <label>Mật khẩu <input type="password" id="lPass" autocomplete="current-password"></label>
+      <button class="btn" id="lBtn" disabled>Đăng nhập</button>
+      <div class="sep">hoặc</div>
+      <button class="btn ghost" id="gBtn">Đăng nhập bằng Google</button>
+      <div class="sep">Chưa có tài khoản? <button class="link" id="toReg">Đăng Ký</button></div>
+    </div>
+    <div id="regView" class="dbody hide" style="padding:0">
+      <label>Tên đăng nhập <input type="text" id="rUser" autocomplete="off" autocapitalize="none" placeholder="3–20 ký tự"></label>
+      <div class="status" id="rStatus"></div>
+      <label>Tên người dùng / Tên hiển thị <input type="text" id="rName" maxlength="30"></label>
+      <label>Mật khẩu <input type="password" id="rPass" autocomplete="new-password"></label>
+      <div class="meter hide" id="rMeter"><i id="rBar"></i></div>
+      <div class="status" id="rStrength"></div>
+      <label>Xác nhận lại mật khẩu <input type="password" id="rPass2" autocomplete="new-password"></label>
+      <div class="status" id="rMatch"></div>
+      <button class="btn" id="rBtn" disabled>Tạo tài khoản</button>
+      <div class="sep">Đã có tài khoản? <button class="link" id="toLogin">Đăng nhập</button></div>
+    </div>
+    <p class="err" id="aErr"></p>
+    <button class="btn ghost" data-close>Đóng</button>
+  </div>
+  <div class="busy hide" id="busy"><div class="spin"></div><div id="busyMsg"></div></div>
+</dialog>
+<div id="toast" popover="manual"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCqh916i2WtEgvcoHXlK9wtHZpSXrxPM0w",
+  authDomain: "f0ndhub.firebaseapp.com",
+  projectId: "f0ndhub",
+  appId: "1:25492132379:web:27e1ea4c2418293149debe"
+};
+const ADMIN_EMAIL = "ngoctuanffa@gmail.com";
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.firestore(), posts = db.collection("posts");
+const $ = id => document.getElementById(id);
+let list = [], current = null, editingId = null, coverData = "", isAdmin = false;
+
+let toastTimer;
+const toast = m => {
+  const t = $("toast");
+  t.textContent = m;
+  if (!t.matches(":popover-open")) t.showPopover();
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.hidePopover(), 2500);
+};
+const esc = s => (s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeUrl = u => /^https?:\/\//i.test(u) ? u : "#";
+const liked = () => JSON.parse(localStorage.getItem("liked") || "[]");
+
+document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());
+
+const authDlg = $("auth"), USER_RE = /^[a-z0-9_]{3,20}$/;
+const toEmail = u => u + "@users.f0ndhub.invalid";
+const norm = s => s.trim().toLowerCase();
+const aErr = m => $("aErr").textContent = m || "";
+let registering = false, userOk = false, chkTimer, chkSeq = 0;
+let resume = null;
+try { resume = JSON.parse(localStorage.getItem("pendingReg") || "null"); } catch (e) {}
+if (resume) registering = true;
+function setBusy(on, msg) {
+  $("busy").classList.toggle("hide", !on);
+  $("busyMsg").textContent = msg || "Đang tạo tài khoản...";
+}
+authDlg.oncancel = e => { if (!$("busy").classList.contains("hide")) e.preventDefault(); };
+
+function showView(v) {
+  $("loginView").classList.toggle("hide", v !== "login");
+  $("regView").classList.toggle("hide", v !== "reg");
+  aErr("");
+}
+function mark(inputId, statusId, text, cls) {
+  const i = $(inputId), s = $(statusId);
+  i.classList.toggle("in-ok", cls === "ok");
+  i.classList.toggle("in-bad", cls === "bad");
+  s.textContent = text || "";
+  s.className = "status " + (cls || "");
+}
+function strength(p) {
+  const c = [/[a-z]/, /[A-Z]/, /\d/, /[^A-Za-z0-9]/].filter(r => r.test(p)).length;
+  if (p.length < 7) return {lv: 0, t: "Quá ngắn (cần trên 6 ký tự)", w: 15, col: "#ff5d73"};
+  if (c <= 1) return {lv: 0, t: "Yếu", w: 30, col: "#ff5d73"};
+  if (c === 2 && p.length < 10) return {lv: 1, t: "Trung bình", w: 62, col: "#fbbf24"};
+  return {lv: 2, t: "Mạnh", w: 100, col: "#4ade80"};
+}
+function updateRegBtn() {
+  const p = $("rPass").value;
+  $("rBtn").disabled = !(userOk && $("rName").value.trim() && strength(p).lv >= 1 && p === $("rPass2").value);
+}
+function updLogin() {
+  $("lBtn").disabled = !($("lUser").value.trim() && $("lPass").value);
+}
+function resetReg() {
+  clearTimeout(chkTimer);
+  chkSeq++;
+  userOk = false;
+  ["rUser", "rName", "rPass", "rPass2"].forEach(i => $(i).value = "");
+  mark("rUser", "rStatus", "", "");
+  mark("rPass", "rStrength", "", "");
+  mark("rPass2", "rMatch", "", "");
+  $("rBar").style.width = 0;
+  $("rMeter").classList.add("hide");
+  updateRegBtn();
+}
+function resetLogin() {
+  $("lUser").value = "";
+  $("lPass").value = "";
+  updLogin();
+}
+
+$("loginBtn").onclick = () => {
+  resetReg();
+  resetLogin();
+  showView("login");
+  authDlg.showModal();
+};
+$("toReg").onclick = () => { resetReg(); showView("reg"); };
+$("toLogin").onclick = () => { resetLogin(); showView("login"); };
+$("logoutBtn").onclick = () => auth.signOut();
+$("lUser").oninput = updLogin;
+$("lPass").oninput = updLogin;
+$("rName").oninput = updateRegBtn;
+
+$("lBtn").onclick = async () => {
+  const u = norm($("lUser").value), p = $("lPass").value;
+  if (!u || !p) return aErr("Nhập tên đăng nhập và mật khẩu");
+  try {
+    await auth.signInWithEmailAndPassword(toEmail(u), p);
+    resetLogin();
+    authDlg.close();
+    toast("Đăng nhập thành công");
+  } catch (e) {
+    aErr(["auth/invalid-credential", "auth/user-not-found", "auth/wrong-password", "auth/invalid-email"].includes(e.code)
+      ? "Sai tên đăng nhập hoặc mật khẩu"
+      : "Đăng nhập lỗi: " + e.code);
+  }
+};
+
+$("gBtn").onclick = async () => {
+  const g = $("gBtn"), label = g.textContent;
+  g.disabled = true;
+  g.textContent = "Đang mở Google...";
+  try {
+    await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+    authDlg.close();
+    toast("Đăng nhập thành công");
+  } catch (e) {
+    aErr(e.code === "auth/unauthorized-domain"
+      ? "Tên miền này chưa được thêm vào Authorized domains trong Firebase"
+      : "Đăng nhập Google lỗi: " + e.code);
+  }
+  g.disabled = false;
+  g.textContent = label;
+};
+
+$("rUser").oninput = () => {
+  clearTimeout(chkTimer);
+  const u = norm($("rUser").value), seq = ++chkSeq;
+  userOk = false;
+  updateRegBtn();
+  if (!u) return mark("rUser", "rStatus", "", "");
+  if (u.length < 3) return mark("rUser", "rStatus", "Không hợp lệ, tên đăng nhập phải có ít nhất 3 ký tự", "bad");
+  if (u.length > 20) return mark("rUser", "rStatus", "Không hợp lệ, tên đăng nhập tối đa 20 ký tự", "bad");
+  if (!USER_RE.test(u)) return mark("rUser", "rStatus", "Không hợp lệ, chỉ dùng chữ a-z, số 0-9 và dấu _", "bad");
+  mark("rUser", "rStatus", "", "");
+  chkTimer = setTimeout(async () => {
+    try {
+      const d = await db.collection("usernames").doc(u).get();
+      if (seq !== chkSeq) return;
+      userOk = !d.exists;
+      updateRegBtn();
+      d.exists ? mark("rUser", "rStatus", "Tên đăng nhập đã tồn tại", "bad") : mark("rUser", "rStatus", "Hợp lệ", "ok");
+    } catch (e) {
+      if (seq === chkSeq) mark("rUser", "rStatus", "Không kiểm tra được, vui lòng thử lại", "bad");
+    }
+  }, 400);
+};
+
+const MATCH_MSG = "Mật khẩu chưa đúng vui lòng thử lại";
+function checkMatch() {
+  const a = $("rPass").value, b = $("rPass2").value;
+  if (!b) { mark("rPass2", "rMatch", "", ""); return updateRegBtn(); }
+  a === b ? mark("rPass2", "rMatch", "Mật khẩu khớp", "ok") : mark("rPass2", "rMatch", MATCH_MSG, "bad");
+  updateRegBtn();
+}
+$("rPass2").oninput = checkMatch;
+$("rPass").oninput = () => {
+  const p = $("rPass").value, bar = $("rBar");
+  $("rMeter").classList.toggle("hide", !p);
+  if (!p) { bar.style.width = 0; mark("rPass", "rStrength", "", ""); checkMatch(); return; }
+  const s = strength(p);
+  bar.style.width = s.w + "%";
+  bar.style.background = s.col;
+  mark("rPass", "rStrength", "Cường độ mật khẩu: " + s.t, s.lv ? "ok" : "bad");
+  checkMatch();
+};
+
+$("rBtn").onclick = async () => {
+  const u = norm($("rUser").value), name = $("rName").value.trim(), p = $("rPass").value;
+  if (!USER_RE.test(u)) return aErr("Tên đăng nhập chỉ gồm a-z, 0-9, _ (3–20 ký tự)");
+  if (!name) return aErr("Hãy nhập tên hiển thị");
+  if (strength(p).lv < 1) return aErr("Mật khẩu quá yếu. Hãy đặt lại: trên 6 ký tự, đạt mức Trung bình trở lên");
+  if (p !== $("rPass2").value) return aErr(MATCH_MSG);
+  aErr("");
+  registering = true;
+  localStorage.setItem("pendingReg", JSON.stringify({u, name}));
+  setBusy(true);
+  try { await runReg(u, name, p); } catch (e) { await failReg(e); }
+};
+
+async function runReg(u, name, p) {
+  const email = toEmail(u);
+  let user;
+  try {
+    user = (await auth.createUserWithEmailAndPassword(email, p)).user;
+  } catch (e) {
+    if (e.code !== "auth/email-already-in-use") throw e;
+    try { user = (await auth.signInWithEmailAndPassword(email, p)).user; } catch (x) { throw {code: "taken"}; }
+    if ((await db.collection("usernames").doc(u).get()).exists) { await auth.signOut(); throw {code: "taken"}; }
+  }
+  await finishReg(user, u, name);
+}
+
+async function finishReg(user, u, name) {
+  const b = db.batch();
+  b.set(db.collection("usernames").doc(u), {uid: user.uid});
+  b.set(db.collection("users").doc(user.uid), {username: u, displayName: name});
+  await b.commit();
+  await user.updateProfile({displayName: name});
+  localStorage.removeItem("pendingReg");
+  await auth.signOut();
+  registering = false;
+  applyUser(null);
+  setBusy(false);
+  resetReg();
+  resetLogin();
+  showView("login");
+  toast("Tạo tài khoản thành công");
+}
+
+async function failReg(e) {
+  if (auth.currentUser) await auth.currentUser.delete().catch(() => {});
+  await auth.signOut().catch(() => {});
+  localStorage.removeItem("pendingReg");
+  registering = false;
+  applyUser(null);
+  setBusy(false);
+  aErr(e.code === "taken" || e.code === "permission-denied"
+    ? "Tên đăng nhập đã tồn tại, tài khoản không được tạo"
+    : "Tạo tài khoản lỗi: " + e.code);
+}
+
+function applyUser(u) {
+  isAdmin = !!u && u.email === ADMIN_EMAIL && u.emailVerified;
+  $("newBtn").classList.toggle("hide", !isAdmin);
+  $("loginBtn").classList.toggle("hide", !!u);
+  $("logoutBtn").classList.toggle("hide", !u);
+  $("who").classList.toggle("hide", !u);
+  $("who").textContent = u ? (u.displayName || "Thành viên") + (isAdmin ? " (Admin)" : "") : "";
+  if (current && $("view").open) { const p = list.find(x => x.id === current); if (p) fillView(p); }
+}
+
+auth.onAuthStateChanged(u => {
+  if (resume) {
+    const r = resume;
+    resume = null;
+    $("rUser").value = r.u;
+    $("rName").value = r.name;
+    showView("reg");
+    setBusy(true, "Đang hoàn tất tạo tài khoản...");
+    if (!authDlg.open) authDlg.showModal();
+    if (u && u.email === toEmail(r.u)) finishReg(u, r.u, r.name).catch(failReg);
+    else {
+      localStorage.removeItem("pendingReg");
+      registering = false;
+      setBusy(false);
+      authDlg.close();
+      resetReg();
+      toast("Việc tạo tài khoản bị gián đoạn, hãy đăng ký lại");
+      applyUser(u);
+    }
+    return;
+  }
+  if (registering) return;
+  applyUser(u);
+});
+
+posts.orderBy("createdAt", "desc").onSnapshot(s => {
+  list = s.docs.map(d => ({id: d.id, ...d.data()}));
+  render();
+  if (current && $("view").open) { const p = list.find(x => x.id === current); if (p) fillView(p); }
+}, e => toast("Không tải được dữ liệu: " + e.code));
+
+function render() {
+  const q = $("search").value.trim().toLowerCase();
+  const items = list.filter(p => (p.title + " " + p.desc).toLowerCase().includes(q));
+  $("grid").innerHTML = items.map(p => `
+    <article class="card" tabindex="0" data-id="${p.id}">
+      <img class="cover" src="${p.cover || ""}" alt="" loading="lazy">
+      <div class="body"><h3>${esc(p.title)}</h3><p>${esc(p.desc)}</p>
+        <div class="meta"><span>♥ ${p.likes || 0}</span><span>${p.views || 0} lượt xem</span></div>
+      </div>
+    </article>`).join("");
+  $("empty").classList.toggle("hide", items.length > 0);
+}
+$("search").oninput = render;
+$("grid").addEventListener("click", e => { const c = e.target.closest(".card"); if (c) openPost(c.dataset.id); });
+$("grid").addEventListener("keydown", e => { if (e.key === "Enter") { const c = e.target.closest(".card"); if (c) openPost(c.dataset.id); } });
+
+function fillView(p) {
+  $("vCover").src = p.cover || "";
+  $("vCover").classList.toggle("hide", !p.cover);
+  $("vTitle").textContent = p.title;
+  $("vDesc").textContent = p.desc;
+  const a = $("vLink");
+  a.href = safeUrl(p.link);
+  a.textContent = p.btn || "Mở liên kết";
+  a.classList.toggle("hide", !p.link);
+  const on = liked().includes(p.id);
+  $("vLike").textContent = (on ? "♥ Đã thích · " : "♡ Thích · ") + (p.likes || 0);
+  $("vLike").classList.toggle("on", on);
+  $("vViews").textContent = (p.views || 0) + " lượt xem";
+  $("adminRow").classList.toggle("hide", !isAdmin);
+}
+function openPost(id) {
+  const p = list.find(x => x.id === id);
+  if (!p) return;
+  current = id;
+  fillView(p);
+  $("view").showModal();
+  if (!sessionStorage.getItem("v" + id)) {
+    sessionStorage.setItem("v" + id, 1);
+    posts.doc(id).update({views: firebase.firestore.FieldValue.increment(1)}).catch(() => {});
+  }
+}
+$("vLike").onclick = async () => {
+  const l = liked(), on = l.includes(current), inc = on ? -1 : 1;
+  localStorage.setItem("liked", JSON.stringify(on ? l.filter(x => x !== current) : [...l, current]));
+  try {
+    await posts.doc(current).update({likes: firebase.firestore.FieldValue.increment(inc)});
+  } catch (e) {
+    toast("Không thể thích bài này");
+  }
+};
+
+function compress(file, max = 900, q = .78) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      const r = Math.min(1, max / Math.max(img.width, img.height)), c = document.createElement("canvas");
+      c.width = img.width * r;
+      c.height = img.height * r;
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      res(c.toDataURL("image/jpeg", q));
+    };
+    img.onerror = rej;
+    img.src = url;
+  });
+}
+$("fFile").onchange = async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  coverData = await compress(f);
+  $("fPrev").src = coverData;
+  $("fPrev").classList.remove("hide");
+};
+function openForm(p) {
+  editingId = p ? p.id : null;
+  coverData = p ? p.cover || "" : "";
+  $("fHead").textContent = p ? "Sửa bài" : "Đăng bài mới";
+  $("fTitle").value = p?.title || "";
+  $("fDesc").value = p?.desc || "";
+  $("fLink").value = p?.link || "";
+  $("fBtn").value = p?.btn || "";
+  $("fFile").value = "";
+  $("fPrev").src = coverData;
+  $("fPrev").classList.toggle("hide", !coverData);
+  $("form").showModal();
+}
+$("newBtn").onclick = () => openForm(null);
+$("editBtn").onclick = () => { $("view").close(); openForm(list.find(x => x.id === current)); };
+$("fSave").onclick = async () => {
+  if (!isAdmin) return toast("Bạn không có quyền");
+  const title = $("fTitle").value.trim(), link = $("fLink").value.trim();
+  if (!title) return toast("Cần nhập tiêu đề");
+  if (link && !/^https?:\/\//i.test(link)) return toast("Liên kết phải bắt đầu bằng http:// hoặc https://");
+  const data = {title, desc: $("fDesc").value.trim(), link, btn: $("fBtn").value.trim(), cover: coverData};
+  try {
+    if (editingId) await posts.doc(editingId).update(data);
+    else await posts.add({...data, likes: 0, views: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp()});
+    $("form").close();
+    toast("Đã lưu bài");
+  } catch (e) {
+    toast("Lưu lỗi: " + e.code);
+  }
+};
+$("delBtn").onclick = async () => {
+  if (!isAdmin || !confirm("Xóa bài này?")) return;
+  await posts.doc(current).delete();
+  $("view").close();
+  toast("Đã xóa");
+};
+</script>
+</body>
+</html>
